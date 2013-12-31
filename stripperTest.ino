@@ -7,10 +7,10 @@
 #define STEPSPEED 10 // how many milliseconds delay between steps
 #define FWD HIGH // which way is DIR wired?
 #define BACK LOW
-#define OPEN 50 // position of stripper servo
-#define CLOSE 170
+#define STRIPOPEN 20 // position of stripper servo
+#define STRIPCLOSED 175
 #define CHOPCLOSED 170
-#define CHOPOPEN 20
+#define CHOPOPEN 0
 #define STRIPPIN 9 // what pin is it on
 #define CHOPPIN 10
 
@@ -30,7 +30,7 @@ void setup() {
   Serial.begin(9600);
   Serial.println("hello");
   chopServo.write(CHOPOPEN);
-  stripper(OPEN);
+  stripper(STRIPOPEN);
 }
 
 void loop()
@@ -52,13 +52,21 @@ void loop()
       Serial.println("back");
       stepper(BACK,STRIPLENGTH);
       break;
+    case 'F':
+      Serial.println("forward TOOLOFFSET");
+      stepper(FWD,TOOLOFFSET);
+      break;
+    case 'B':
+      Serial.println("back TOOLOFFSET");
+      stepper(BACK,TOOLOFFSET);
+      break;
     case 'o':
       Serial.println("open");
-      stripper(OPEN);
+      stripper(STRIPOPEN);
       break;
     case 'c':
       Serial.println("close");
-      stripper(CLOSE);
+      stripper(STRIPCLOSED);
       break;
     case 'x':
       Serial.println("xchop!");
