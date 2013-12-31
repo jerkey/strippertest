@@ -1,21 +1,24 @@
-int inByte = 0;         // incoming serial byte
 #define STEPPIN 11     
 #define DIRPIN 12      
-int dir = 0;
-int steps = 200;  // 1000 steps = 63mm of wire
-int delayTime = 10;
+#define STEPSPERMM 15.87 // 1000 steps = 63mm of wire.
+#define WIRELENGTH 77 * STEPSPERMM // 77mm total pieces wanted.
+#define STRIPLENGTH 4 * STEPSPERMM // 5mm stripped
+#define TOOLOFFSET 9.5 * STEPSPERMM // 9.5mm is distance between stripper and chopper
+#define STEPSPEED 10 // how many milliseconds delay between steps
 #define FWD HIGH // which way is DIR wired?
 #define BACK LOW
 #define OPEN 50 // position of stripper servo
 #define CLOSE 170
 #define CHOPCLOSED 170
-#define CHOPOPEN 40
+#define CHOPOPEN 20
 #define STRIPPIN 9 // what pin is it on
 #define CHOPPIN 10
 
 #include <Servo.h> 
 Servo chopServo;  // create servo object to control a servo 
 Servo stripServo;  // create servo object to control a servo 
+
+int inByte = 0;         // incoming serial byte
 
 void setup() {
   pinMode(STEPPIN, OUTPUT);      
@@ -26,6 +29,8 @@ void setup() {
   stripServo.attach(STRIPPIN);
   Serial.begin(9600);
   Serial.println("hello");
+  chopServo.write(CHOPOPEN);
+  stripper(OPEN);
 }
 
 void loop()
@@ -35,13 +40,17 @@ void loop()
     // get incoming byte:
     inByte = Serial.read();
     switch (inByte) {
+    case 'w':
+      Serial.println("wirefeed!");
+      stepper(FWD,WIRELENGTH);
+      break;
     case 'f':
-      Serial.println("forward 100");
-      stepper(FWD,100);
+      Serial.println("forward");
+      stepper(FWD,STRIPLENGTH);
       break;
     case 'b':
-      Serial.println("back 50");
-      stepper(BACK,50);
+      Serial.println("back");
+      stepper(BACK,STRIPLENGTH);
       break;
     case 'o':
       Serial.println("open");
@@ -53,6 +62,12 @@ void loop()
       break;
     case 'x':
       Serial.println("xchop!");
+      stepper(FWD,TOOLOFFSET);
+      chop();
+      stepper(BACK,TOOLOFFSET);
+      break;
+    case 'j':
+      Serial.println("just chop");
       chop();
       break;
     }
@@ -65,7 +80,7 @@ void stepper(boolean dir, unsigned int distance) {
     digitalWrite(STEPPIN, HIGH);
     delay(5);
     digitalWrite(STEPPIN, LOW);
-    delay(delayTime);
+    delay(STEPSPEED);
   }
 }
 
@@ -76,7 +91,7 @@ void stripper(int angle) {
 
 void chop() {
   chopServo.write(CHOPCLOSED);
-  delay(500);
+  delay(900);
   chopServo.write(CHOPOPEN);
-  delay(500);
+  delay(700);
 }
