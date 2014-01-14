@@ -4,13 +4,12 @@
 #define WIRELENGTH 77 * STEPSPERMM // 77mm total pieces wanted.
 #define STRIPLENGTH 4 * STEPSPERMM // 5mm stripped
 #define TOOLOFFSET 9.5 * STEPSPERMM // 9.5mm is distance between stripper and chopper
-#define STEPSPEED 10 // how many milliseconds delay between steps
 #define FWD HIGH // which way is DIR wired?
 #define BACK LOW
 #define STRIPOPEN 20 // position of stripper servo
 #define STRIPCLOSED 175
 #define CHOPCLOSED 170
-#define CHOPOPEN 0
+#define CHOPOPEN 10
 #define STRIPPIN 9 // what pin is it on
 #define CHOPPIN 10
 
@@ -19,6 +18,7 @@ Servo chopServo;  // create servo object to control a servo
 Servo stripServo;  // create servo object to control a servo 
 
 int inByte = 0;         // incoming serial byte
+int speed = 10000;  // how many microseconds delay between steps
 
 void setup() {
   pinMode(STEPPIN, OUTPUT);      
@@ -42,23 +42,31 @@ void loop()
     switch (inByte) {
     case 'w':
       Serial.println("wirefeed!");
-      stepper(FWD,WIRELENGTH);
+      stepper(FWD,WIRELENGTH,speed);
       break;
     case 'f':
       Serial.println("forward");
-      stepper(FWD,STRIPLENGTH);
+      stepper(FWD,STRIPLENGTH,speed);
       break;
     case 'b':
       Serial.println("back");
-      stepper(BACK,STRIPLENGTH);
+      stepper(BACK,STRIPLENGTH,speed);
+      break;
+    case ']':
+      Serial.println("] ooch forward");
+      stepper(FWD,35,speed);
+      break;
+    case '[':
+      Serial.println("[ ooch back");
+      stepper(BACK,35,speed);
       break;
     case 'F':
       Serial.println("forward TOOLOFFSET");
-      stepper(FWD,TOOLOFFSET);
+      stepper(FWD,TOOLOFFSET,speed);
       break;
     case 'B':
       Serial.println("back TOOLOFFSET");
-      stepper(BACK,TOOLOFFSET);
+      stepper(BACK,TOOLOFFSET,speed);
       break;
     case 'o':
       Serial.println("open");
@@ -70,25 +78,48 @@ void loop()
       break;
     case 'x':
       Serial.println("xchop!");
-      stepper(FWD,TOOLOFFSET);
+      stepper(FWD,TOOLOFFSET,speed);
       chop();
-      stepper(BACK,TOOLOFFSET);
+      stepper(BACK,TOOLOFFSET,speed);
       break;
     case 'j':
       Serial.println("just chop");
       chop();
       break;
+    case 'G':
+      Serial.println("Go fwd until any key");
+      while (Serial.available() == 0) stepper(FWD,STRIPLENGTH,speed);
+      inByte = Serial.read();
+      break;
+    case 'R':
+      Serial.println("Reverse until any key");
+      while (Serial.available() == 0) stepper(BACK,STRIPLENGTH,speed);
+      inByte = Serial.read();
+      break;
+    case '=':
+      Serial.print("speed ");
+      speed += 100;
+      Serial.println(speed);
+      break;
+    case '-':
+      Serial.print("speed ");
+      speed -= 100;
+      Serial.println(speed);
+      break;
+    default:
+      Serial.println("wirefeed forward back Forward(TOOLOFFSET) Back(TOOLOFFSET) open close xchop justchop Go Reverse");
+      break;
     }
   }
 }
 
-void stepper(boolean dir, unsigned int distance) {
+void stepper(boolean dir, unsigned int distance, int speed) {
   digitalWrite(DIRPIN, dir);
   for(int i=0; i <distance ;  i++){
     digitalWrite(STEPPIN, HIGH);
-    delay(5);
+    delayMicroseconds(500);
     digitalWrite(STEPPIN, LOW);
-    delay(STEPSPEED);
+    delayMicroseconds(speed);
   }
 }
 
